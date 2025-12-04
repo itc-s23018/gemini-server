@@ -1,7 +1,8 @@
 import admin from "firebase-admin";
-import { buildVoicePrompt } from "../../lib/prompts/voice";
-import { buildWordPrompt } from "../../lib/prompts/word";
-import { buildTextPrompt } from "../../lib/prompts/text";
+import { buildVoicePrompt } from "../../lib/prompts/voice.js";
+import { buildWordPrompt } from "../../lib/prompts/word.js";
+import { buildTextPrompt } from "../../lib/prompts/text.js";
+
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -22,9 +23,14 @@ export default async function handler(req, res) {
 
     let apiKey;
     switch (mode) {
-      case "voice": apiKey = process.env.GEMINI_API_KEY_VOICE; break;
-      case "word": apiKey = process.env.GEMINI_API_KEY_WORD; break;
-      default: apiKey = process.env.GEMINI_API_KEY_TEXT;
+      case "voice":
+        apiKey = process.env.GEMINI_API_KEY_VOICE;
+        break;
+      case "word":
+        apiKey = process.env.GEMINI_API_KEY_WORD;
+        break;
+      default:
+        apiKey = process.env.GEMINI_API_KEY_TEXT;
     }
 
     let finalPrompt;
@@ -37,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
       {
         method: "POST",
         headers: {
@@ -54,7 +60,7 @@ export default async function handler(req, res) {
     res.status(200).json(data);
 
   } catch (error) {
-    console.error(error);
+    console.error("Gemini API呼び出し失敗:", error);
     res.status(500).json({ error: error.message });
   }
 }
