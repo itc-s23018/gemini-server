@@ -1,7 +1,7 @@
 import admin from "firebase-admin";
-import { buildVoicePrompt } from "../../lib/prompts/voice.js";
-import { buildWordPrompt } from "../../lib/prompts/word.js";
-import { buildTextPrompt } from "../../lib/prompts/text.js";
+import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
+import { buildWordPrompt } from "../../app/lib/prompts/word.js";
+import { buildTextPrompt } from "../../app/lib/prompts/text.js";
 
 
 if (!admin.apps.length) {
