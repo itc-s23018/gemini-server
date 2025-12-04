@@ -23,6 +23,22 @@ export default async function handler(req, res) {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
+    // クライアントから mode を受け取る
+    const { prompt, mode } = req.body;
+
+    // mode に応じて APIキーを切り替え
+    let apiKey;
+    switch (mode) {
+      case "voice":
+        apiKey = process.env.GEMINI_API_KEY_VOICE;
+        break;
+      case "word":
+        apiKey = process.env.GEMINI_API_KEY_WORD;
+        break;
+      default:
+        apiKey = process.env.GEMINI_API_KEY_TEXT;
+    }
+
     // Gemini API 呼び出し
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
@@ -30,10 +46,10 @@ export default async function handler(req, res) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.GEMINI_API_KEY}`
+          "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: req.body.prompt }] }]
+          contents: [{ parts: [{ text: prompt }] }]
         })
       }
     );
