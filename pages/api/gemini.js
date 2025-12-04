@@ -1,4 +1,7 @@
 import admin from "firebase-admin";
+import { buildVoicePrompt } from "../../lib/prompts/voice";
+import { buildWordPrompt } from "../../lib/prompts/word";
+import { buildTextPrompt } from "../../lib/prompts/text";
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -12,21 +15,25 @@ if (!admin.apps.length) {
 
 export default async function handler(req, res) {
   try {
-    const { idToken, prompt, mode } = req.body;
+    const { idToken, prompt, mode, history = [], dbWords = [], user = null } = req.body;
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
     let apiKey;
     switch (mode) {
-      case "voice":
-        apiKey = process.env.GEMINI_API_KEY_VOICE;
-        break;
-      case "word":
-        apiKey = process.env.GEMINI_API_KEY_WORD;
-        break;
-      default:
-        apiKey = process.env.GEMINI_API_KEY_TEXT;
+      case "voice": apiKey = process.env.GEMINI_API_KEY_VOICE; break;
+      case "word": apiKey = process.env.GEMINI_API_KEY_WORD; break;
+      default: apiKey = process.env.GEMINI_API_KEY_TEXT;
+    }
+
+    let finalPrompt;
+    if (mode === "voice") {
+      finalPrompt = buildVoicePrompt(prompt, history, dbWords, user);
+    } else if (mode === "word") {
+      finalPrompt = buildWordPrompt(prompt);
+    } else {
+      finalPrompt = buildTextPrompt(prompt);
     }
 
     const response = await fetch(
@@ -38,7 +45,7 @@ export default async function handler(req, res) {
           "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: finalPrompt }] }]
         })
       }
     );
