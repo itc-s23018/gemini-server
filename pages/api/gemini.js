@@ -3,6 +3,7 @@ import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
 import { buildWordPrompt } from "../../app/lib/prompts/word.js";
 import { buildTextPrompt } from "../../app/lib/prompts/text.js";
 
+
 // Firebase Admin 初期化（1回だけ）
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -30,20 +31,19 @@ export default async function handler(req, res) {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
+    // APIキー選択
     let apiKey;
     switch (mode) {
       case "voice":
         apiKey = process.env.API_KEY_VOICE;
         break;
-
-        case "word":
-          apiKey = process.env.API_KEY_WORD;
-          break;
-          
-          default:
-            apiKey = process.env.API_KEY_TEXT;
-}
-
+      case "word":
+        apiKey = process.env.API_KEY_WORD;
+        break;
+      case "text":
+      default:
+        apiKey = process.env.API_KEY_TEXT;
+    }
 
     // プロンプト生成
     let finalPrompt;
@@ -55,14 +55,12 @@ export default async function handler(req, res) {
       finalPrompt = buildTextPrompt(prompt);
     }
 
-    // Gemini API 呼び出し（APIキーはURLに付ける）
+    // Gemini API 呼び出し
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: finalPrompt }] }]
         })

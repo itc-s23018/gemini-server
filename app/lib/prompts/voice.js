@@ -1,13 +1,9 @@
 export function buildVoicePrompt(rawText, history = [], dbWords = [], user = null) {
   const historyText = history.join("\n");
-  const dictionaryText = dbWords
-    .map(w => `${w.word}(${w.wordRuby || ""})`)
-    .join(", ");
-
+  const dictionaryText = dbWords.map(w => `${w.word}(${w.wordRuby || ""})`).join(", ");
   const userText = user
     ? `ユーザー名: ${user.lastName}${user.firstName} (${user.lastNameRuby || ""} ${user.firstNameRuby || ""})`
     : "";
-
   const userTextSection = userText ? `ユーザー情報:\n${userText}\n` : "";
 
   return `
