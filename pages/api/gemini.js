@@ -30,18 +30,20 @@ export default async function handler(req, res) {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
-    // モードごとに APIキーを切り替え
     let apiKey;
     switch (mode) {
       case "voice":
-        apiKey = process.env.GEMINI_API_KEY_VOICE;
+        apiKey = process.env.API_KEY_VOICE;
         break;
-      case "word":
-        apiKey = process.env.GEMINI_API_KEY_WORD;
-        break;
-      default:
-        apiKey = process.env.GEMINI_API_KEY_TEXT;
-    }
+
+        case "word":
+          apiKey = process.env.API_KEY_WORD;
+          break;
+          
+          default:
+            apiKey = process.env.API_KEY_TEXT;
+}
+
 
     // プロンプト生成
     let finalPrompt;
