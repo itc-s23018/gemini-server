@@ -3,7 +3,7 @@ import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
 import { buildWordPrompt } from "../../app/lib/prompts/word.js";
 import { buildTextPrompt } from "../../app/lib/prompts/text.js";
 
-
+// Firebase Admin 初期化（1回だけ）
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -18,9 +18,19 @@ export default async function handler(req, res) {
   try {
     const { idToken, prompt, mode, history = [], dbWords = [], user = null } = req.body;
 
+    // バリデーション
+    if (!idToken) {
+      return res.status(400).json({ error: "idToken is required" });
+    }
+    if (!prompt) {
+      return res.status(400).json({ error: "prompt is required" });
+    }
+
+    // Firebase ID トークンを検証
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
+    // モードごとに APIキーを切り替え
     let apiKey;
     switch (mode) {
       case "voice":
@@ -33,6 +43,7 @@ export default async function handler(req, res) {
         apiKey = process.env.GEMINI_API_KEY_TEXT;
     }
 
+    // プロンプト生成
     let finalPrompt;
     if (mode === "voice") {
       finalPrompt = buildVoicePrompt(prompt, history, dbWords, user);
@@ -42,6 +53,7 @@ export default async function handler(req, res) {
       finalPrompt = buildTextPrompt(prompt);
     }
 
+    // Gemini API 呼び出し
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
       {
@@ -56,8 +68,16 @@ export default async function handler(req, res) {
       }
     );
 
+    if (!response.ok) {
+      const errData = await response.json();
+      console.error("Gemini API error:", errData);
+      return res.status(response.status).json(errData);
+    }
+
     const data = await response.json();
-    res.status(200).json(data);
+
+    // 認証済みユーザー情報も返す
+    res.status(200).json({ uid: decodedToken.uid, data });
 
   } catch (error) {
     console.error("Gemini API呼び出し失敗:", error);
