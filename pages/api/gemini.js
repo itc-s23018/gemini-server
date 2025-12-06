@@ -43,16 +43,18 @@ export default async function handler(req, res) {
       default:
         apiKey = process.env.API_KEY_TEXT;
     }
-
-    // プロンプト生成
+    
     let finalPrompt;
     if (mode === "voice") {
       finalPrompt = buildVoicePrompt(prompt, history, dbWords, user);
     } else if (mode === "word") {
       finalPrompt = buildWordPrompt(prompt);
     } else {
-      finalPrompt = buildTextPrompt(prompt);
-    }
+      // 履歴全体を結合して渡す
+    const historyText = history.join("\n");
+    finalPrompt = buildTextPrompt(historyText);
+  }
+
 
     // ✅ タイムアウト制御を追加
     const controller = new AbortController();
