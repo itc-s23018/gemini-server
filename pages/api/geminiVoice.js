@@ -1,19 +1,8 @@
-import admin from "firebase-admin";
-import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
-import { buildWordPrompt } from "../../app/lib/prompts/word.js";
-import { buildTextPrompt } from "./geminiText.js";
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
     const { idToken, prompt, mode, history = [], dbWords = [], user = null } = req.body;
 
@@ -22,7 +11,7 @@ export default async function handler(req, res) {
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
-　
+
     let apiKey;
     switch (mode) {
       case "voice": apiKey = process.env.API_KEY_VOICE; break;
@@ -63,22 +52,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Android の GeminiClient と同じように candidates を解析
-    let suggestions = [];
-    const candidates = data.candidates || [];
-    if (candidates.length > 0) {
-      const parts = candidates[0].content?.parts || [];
-      const text = parts.length > 0 ? parts[0].text || "" : "";
-      suggestions = text
-        .split("\n")
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-    }
-
-   res.status(200).json({
-  uid: decodedToken.uid,
-  data
-});
+    res.status(200).json({
+      uid: decodedToken.uid,
+      data
+    });
 
   } catch (error) {
     console.error("Gemini API呼び出し失敗:", error);

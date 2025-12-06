@@ -48,6 +48,10 @@ ${wordsText}
 }
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
     const { idToken, messages = [], savedWords = [], categories = [] } = req.body;
 
@@ -79,30 +83,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 返答候補抽出
-    let suggestions = [];
-    const candidates = data.candidates || [];
-    if (candidates.length > 0) {
-      const parts = candidates[0].content?.parts || [];
-      const rawText = parts.length > 0 ? parts[0].text || "" : "";
-      suggestions = rawText
-        .split("\n")
-        .map(line => line.trim())
-        .filter(line => line.includes("「") && line.includes("」"))
-        .map(line => {
-          const start = line.indexOf("「");
-          const end = line.indexOf("」");
-          return (start !== -1 && end !== -1 && end > start)
-            ? line.substring(start + 1, end)
-            : null;
-        })
-        .filter(Boolean)
-        .slice(0, 3);
-    }
-
+    // Android 側と同じ形式で返す
     res.status(200).json({
       uid: decodedToken.uid,
-      suggestions
+      data
     });
 
   } catch (error) {
