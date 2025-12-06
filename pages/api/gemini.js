@@ -3,7 +3,6 @@ import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
 import { buildWordPrompt } from "../../app/lib/prompts/word.js";
 import { buildTextPrompt } from "../../app/lib/prompts/text.js";
 
-
 // Firebase Admin 初期化（1回だけ）
 if (!admin.apps.length) {
   admin.initializeApp({
