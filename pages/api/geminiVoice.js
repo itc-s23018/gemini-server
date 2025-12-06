@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
-
+　
     let apiKey;
     switch (mode) {
       case "voice": apiKey = process.env.API_KEY_VOICE; break;
@@ -75,11 +75,10 @@ export default async function handler(req, res) {
         .filter(s => s.length > 0);
     }
 
-    // Android 側と同じ形式で返す
-    res.status(200).json({
-      uid: decodedToken.uid,
-      suggestions
-    });
+   res.status(200).json({
+  uid: decodedToken.uid,
+  data
+});
 
   } catch (error) {
     console.error("Gemini API呼び出し失敗:", error);
