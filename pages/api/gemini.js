@@ -43,18 +43,18 @@ export default async function handler(req, res) {
       default:
         apiKey = process.env.API_KEY_TEXT;
     }
-    
+
+    // プロンプト生成
     let finalPrompt;
     if (mode === "voice") {
       finalPrompt = buildVoicePrompt(prompt, history, dbWords, user);
     } else if (mode === "word") {
       finalPrompt = buildWordPrompt(prompt);
     } else {
-      // 履歴全体を結合して渡す
-    const historyText = history.join("\n");
-    finalPrompt = buildTextPrompt(historyText);
-  }
-
+      // ✅ 履歴の最新5件だけを結合して渡す
+      const recentHistory = history.slice(-5).join("\n");
+      finalPrompt = buildTextPrompt(recentHistory);
+    }
 
     // ✅ タイムアウト制御を追加
     const controller = new AbortController();
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           contents: [{ parts: [{ text: finalPrompt }] }]
         }),
-        signal: controller.signal
+        signal: controller.signal,
       }
     );
 
