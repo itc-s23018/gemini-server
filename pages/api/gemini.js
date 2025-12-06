@@ -54,7 +54,10 @@ export default async function handler(req, res) {
       finalPrompt = buildTextPrompt(prompt);
     }
 
-    // Gemini API 呼び出し
+    // ✅ タイムアウト制御を追加
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30秒で中断
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
@@ -62,9 +65,12 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: finalPrompt }] }]
-        })
+        }),
+        signal: controller.signal
       }
     );
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errData = await response.json();
