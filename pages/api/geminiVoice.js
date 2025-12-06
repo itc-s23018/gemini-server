@@ -3,7 +3,6 @@ import { buildVoicePrompt } from "../../app/lib/prompts/voice.js";
 import { buildWordPrompt } from "../../app/lib/prompts/word.js";
 import { buildTextPrompt } from "../../app/lib/prompts/text.js";
 
-// Firebase Admin 初期化（1回だけ）
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -18,33 +17,20 @@ export default async function handler(req, res) {
   try {
     const { idToken, prompt, mode, history = [], dbWords = [], user = null } = req.body;
 
-    // バリデーション
-    if (!idToken) {
-      return res.status(400).json({ error: "idToken is required" });
-    }
-    if (!prompt) {
-      return res.status(400).json({ error: "prompt is required" });
-    }
+    if (!idToken) return res.status(400).json({ error: "idToken is required" });
+    if (!prompt) return res.status(400).json({ error: "prompt is required" });
 
-    // Firebase ID トークンを検証
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("ログインユーザー:", decodedToken.uid);
 
-    // APIキー選択
     let apiKey;
     switch (mode) {
-      case "voice":
-        apiKey = process.env.API_KEY_VOICE;
-        break;
-      case "word":
-        apiKey = process.env.API_KEY_WORD;
-        break;
+      case "voice": apiKey = process.env.API_KEY_VOICE; break;
+      case "word": apiKey = process.env.API_KEY_WORD; break;
       case "text":
-      default:
-        apiKey = process.env.API_KEY_TEXT;
+      default: apiKey = process.env.API_KEY_TEXT;
     }
 
-    // プロンプト生成
     let finalPrompt;
     if (mode === "voice") {
       finalPrompt = buildVoicePrompt(prompt, history, dbWords, user);
@@ -54,18 +40,15 @@ export default async function handler(req, res) {
       finalPrompt = buildTextPrompt(prompt);
     }
 
-    // ✅ タイムアウト制御を追加
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30秒で中断
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: finalPrompt }] }]
-        }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] }),
         signal: controller.signal
       }
     );
@@ -80,8 +63,23 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 認証済みユーザー情報も返す
-    res.status(200).json({ uid: decodedToken.uid, data });
+    // Android の GeminiClient と同じように candidates を解析
+    let suggestions = [];
+    const candidates = data.candidates || [];
+    if (candidates.length > 0) {
+      const parts = candidates[0].content?.parts || [];
+      const text = parts.length > 0 ? parts[0].text || "" : "";
+      suggestions = text
+        .split("\n")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+
+    // Android 側と同じ形式で返す
+    res.status(200).json({
+      uid: decodedToken.uid,
+      suggestions
+    });
 
   } catch (error) {
     console.error("Gemini API呼び出し失敗:", error);
