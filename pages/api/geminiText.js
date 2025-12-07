@@ -8,24 +8,19 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.API_KEY_TEXT;
 
-    // ✅ プロンプト生成
     const recentHistory = history.slice(-5).join("\n");
     const latestMessage = history.length > 0 ? history[history.length - 1] : "";
-
-    const dictionaryText = dbWords
-      .map(w => `${w.word}(${w.wordRuby || ""})`)
-      .join(", ");
-
+    const dictionaryText = dbWords.map(w => `${w.word}(${w.wordRuby || ""})`).join(", ");
     const userText = user
       ? `ユーザー名: ${user.lastName}${user.firstName} (${user.lastNameRuby || ""} ${user.firstNameRuby || ""})`
       : "";
     const userTextSection = userText ? `ユーザー情報:\n${userText}\n` : "";
 
     const finalPrompt = `
-    以下は会話の履歴と保存済みの専門用語です。
-    最後のメッセージに対して、自然で適切な返答を3つ提案してください。
-    可能であれば保存済み用語を活用してください。
+    あなたは日本語で返答候補を作るAIアシスタントです。
+    出力仕様を必ず守ってください。
     
+    [文脈]
     会話履歴（直近5件）:
     ${recentHistory}
     
@@ -33,8 +28,15 @@ export default async function handler(req, res) {
     ${dictionaryText}
     
     ${userTextSection}最後のメッセージ: 「${latestMessage}」
+
+    [出力仕様]
+    - プレーンテキストのみ。Markdown、見出し、番号、箇条書き、前置き、説明は一切禁止。
+    - ちょうど3行で出力。各行は1つの自然な返答文のみ。
+    - 丁寧で自然な日本語。必要なら保存済み用語を自然に含める。
+    - 先頭の「返答1:」や「-」などは付けない。文だけ。
     
-    返答の提案:
+    
+    [出力]
     `.trim();
 
     const response = await fetch(
