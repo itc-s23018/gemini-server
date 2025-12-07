@@ -3,7 +3,7 @@ import { verifyUser } from "./auth.js";
 
 export default async function handler(req, res) {
   try {
-    const { idToken, history = [], dbWords = [], user = null } = req.body;
+    const { idToken, history = [], dbWords = [] } = req.body;
     const decodedToken = await verifyUser(idToken);
 
     const apiKey = process.env.API_KEY_TEXT;
@@ -17,12 +17,6 @@ export default async function handler(req, res) {
       .map(w => `${w.word}(${w.wordRuby || ""})`)
       .join(", ");
 
-    // ユーザー情報を付加
-    const userText = user
-      ? `ユーザー名: ${user.lastName}${user.firstName} (${user.lastNameRuby || ""} ${user.firstNameRuby || ""})`
-      : "";
-    const userTextSection = userText ? `ユーザー情報:\n${userText}\n` : "";
-
     // ✅ プロンプトは最小限の修正で「余計な説明禁止」「3行のみ」を強調
     const finalPrompt = `
     以下は会話の履歴と保存済みの専門用語です。
@@ -35,7 +29,7 @@ export default async function handler(req, res) {
     保存済み用語:
     ${dictionaryText}
     
-    ${userTextSection}最後のメッセージ: 「${latestMessage}」
+    最後のメッセージ: 「${latestMessage}」
     
     返答の提案:
     - 出力はプレーンテキストのみ。Markdownや見出し、番号、箇条書き、前置き、説明は禁止。
